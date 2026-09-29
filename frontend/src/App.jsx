@@ -4,8 +4,13 @@ import Dashboard from "./pages/Dashboard";
 function App() {
   return (
     <div className="app">
-      <Sidebar />
-      <Dashboard />
+      <aside className="app-sidebar">
+        <Sidebar />
+      </aside>
+
+      <main className="app-main">
+        <Dashboard />
+      </main>
     </div>
   );
 }

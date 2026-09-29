@@ -1,57 +1,85 @@
+import {
+  CheckCircle2,
+  Clock3,
+  Server,
+} from "lucide-react";
+
+import EnvironmentBadge from "./EnvironmentBadge";
+
 function ServiceTable({ services }) {
   return (
     <div className="service-card">
+
       <div className="section-heading">
+
         <div>
-          <p className="eyebrow">SERVICE CATALOG</p>
-          <h3>Service Health</h3>
+          <p className="eyebrow">
+            SERVICE CATALOG
+          </p>
+
+          <h3>
+            Service Health
+          </h3>
         </div>
 
-        <span>{services.length} services</span>
+        <div className="service-summary">
+          <CheckCircle2 size={14} />
+          {services.length} services operational
+        </div>
+
       </div>
 
-      <div className="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Service</th>
-              <th>Environment</th>
-              <th>Status</th>
-              <th>Version</th>
-              <th>Uptime</th>
-            </tr>
-          </thead>
+      <div className="services-list">
 
-          <tbody>
-            {services.map((service) => (
-              <tr key={service.id}>
-                <td>
-                  <strong>{service.name}</strong>
-                </td>
+        {services.map((service) => (
 
-                <td>
-                  <span className="environment">
-                    {service.environment}
-                  </span>
-                </td>
+          <div
+            className="service-row"
+            key={service.id}
+          >
 
-                <td>
-                  <span className="service-status">
-                    <span className="status-dot" />
-                    {service.status}
-                  </span>
-                </td>
+            <div className="service-info">
 
-                <td>
-                  <code>{service.version}</code>
-                </td>
+              <div className="service-icon">
+                <Server size={17} />
+              </div>
 
-                <td>{service.uptime}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+              <div>
+                <strong>
+                  {service.name}
+                </strong>
+
+                <span>
+                  Service ID: svc-{service.id}
+                </span>
+              </div>
+
+            </div>
+
+            <EnvironmentBadge
+              environment={service.environment}
+            />
+
+            <div className="service-status">
+              <span className="status-dot animated" />
+              {service.status}
+            </div>
+
+            <code>
+              {service.version}
+            </code>
+
+            <div className="uptime">
+              <Clock3 size={13} />
+              {service.uptime}
+            </div>
+
+          </div>
+
+        ))}
+
       </div>
+
     </div>
   );
 }
