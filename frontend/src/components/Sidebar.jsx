@@ -8,30 +8,14 @@ import {
 } from "lucide-react";
 
 const navigation = [
-  {
-    label: "Overview",
-    icon: LayoutDashboard,
-    active: true,
-  },
-  {
-    label: "Services",
-    icon: Server,
-  },
-  {
-    label: "Deployments",
-    icon: Rocket,
-  },
-  {
-    label: "Incidents",
-    icon: TriangleAlert,
-  },
-  {
-    label: "Monitoring",
-    icon: Activity,
-  },
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "services", label: "Services", icon: Server },
+  { id: "deployments", label: "Deployments", icon: Rocket },
+  { id: "incidents", label: "Incidents", icon: TriangleAlert },
+  { id: "monitoring", label: "Monitoring", icon: Activity },
 ];
 
-function Sidebar() {
+function Sidebar({ activeSection, onNavigate }) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -40,13 +24,8 @@ function Sidebar() {
         </div>
 
         <div>
-          <div className="brand-name">
-            CloudOps360
-          </div>
-
-          <div className="brand-subtitle">
-            DevOps Platform
-          </div>
+          <div className="brand-name">CloudOps360</div>
+          <div className="brand-subtitle">DevOps Platform</div>
         </div>
       </div>
 
@@ -61,10 +40,11 @@ function Sidebar() {
           return (
             <button
               type="button"
-              key={item.label}
+              key={item.id}
               className={`sidebar-link ${
-                item.active ? "active" : ""
+                activeSection === item.id ? "active" : ""
               }`}
+              onClick={() => onNavigate(item.id)}
             >
               <Icon size={18} />
               <span>{item.label}</span>
