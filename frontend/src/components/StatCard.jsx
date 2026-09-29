@@ -1,56 +1,52 @@
-import {
-  Activity,
-  AlertTriangle,
-  Server,
-  TrendingUp,
-} from "lucide-react";
+import { Activity, AlertTriangle, Server, TrendingUp } from "lucide-react";
 
-const icons = {
-  services: Server,
-  healthy: Activity,
-  incidents: AlertTriangle,
-  uptime: TrendingUp,
+const config = {
+  services: {
+    icon: Server,
+    color: "#4f8cff",
+  },
+
+  healthy: {
+    icon: Activity,
+    color: "#31d17c",
+  },
+
+  incidents: {
+    icon: AlertTriangle,
+    color: "#f4c95d",
+  },
+
+  uptime: {
+    icon: TrendingUp,
+    color: "#9b7cff",
+  },
 };
 
-function StatCard({
-  type,
-  label,
-  value,
-  description,
-  trend,
-}) {
-  const Icon = icons[type];
+function StatCard({ type, label, value, description, trend }) {
+  const item = config[type];
+  const Icon = item.icon;
 
   return (
-    <div className={`stat-card stat-${type}`}>
+    <article
+      className="stat-card"
+      style={{
+        "--stat-color": item.color,
+      }}
+    >
+      <div className="stat-card-top">
+        <div className="stat-card-label">{label}</div>
 
-      <div className="stat-top">
-        <div className="stat-icon">
-          <Icon size={18} />
+        <div className="stat-card-icon">
+          <Icon size={17} />
         </div>
-
-        {trend && (
-          <span className="trend">
-            {trend}
-          </span>
-        )}
       </div>
 
-      <div className="stat-label">
-        {label}
-      </div>
+      <div className="stat-card-value">{value}</div>
 
-      <strong>{value}</strong>
+      <div className="stat-card-description">{description}</div>
 
-      <span className="stat-description">
-        {description}
-      </span>
-
-      <div className="stat-line">
-        <span />
-      </div>
-
-    </div>
+      <div className="stat-card-trend">{trend}</div>
+    </article>
   );
 }
 

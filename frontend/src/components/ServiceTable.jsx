@@ -1,85 +1,67 @@
-import {
-  CheckCircle2,
-  Clock3,
-  Server,
-} from "lucide-react";
+import { CheckCircle2, Server } from "lucide-react";
 
 import EnvironmentBadge from "./EnvironmentBadge";
 
-function ServiceTable({ services }) {
+function ServiceTable({ services = [] }) {
+  const healthyServices = services.filter(
+    (service) => service.status?.toLowerCase() === "healthy",
+  ).length;
+
   return (
-    <div className="service-card">
-
-      <div className="section-heading">
-
-        <div>
-          <p className="eyebrow">
-            SERVICE CATALOG
-          </p>
-
-          <h3>
-            Service Health
-          </h3>
-        </div>
-
-        <div className="service-summary">
-          <CheckCircle2 size={14} />
-          {services.length} services operational
-        </div>
-
-      </div>
-
-      <div className="services-list">
-
-        {services.map((service) => (
-
-          <div
-            className="service-row"
-            key={service.id}
-          >
-
-            <div className="service-info">
-
-              <div className="service-icon">
-                <Server size={17} />
-              </div>
-
-              <div>
-                <strong>
-                  {service.name}
-                </strong>
-
-                <span>
-                  Service ID: svc-{service.id}
-                </span>
-              </div>
-
+    <div className="service-table">
+      {services.map((service) => (
+        <div className="service-row" key={service.id}>
+          <div className="service-name">
+            <div className="service-icon">
+              <Server size={16} />
             </div>
 
-            <EnvironmentBadge
-              environment={service.environment}
-            />
+            <div>
+              <strong>{service.name}</strong>
 
-            <div className="service-status">
-              <span className="status-dot animated" />
-              {service.status}
+              <span>service-{String(service.id).padStart(3, "0")}</span>
             </div>
-
-            <code>
-              {service.version}
-            </code>
-
-            <div className="uptime">
-              <Clock3 size={13} />
-              {service.uptime}
-            </div>
-
           </div>
 
-        ))}
+          <EnvironmentBadge environment={service.environment} />
 
-      </div>
+          <div className="service-status">
+            <span className="status-dot" />
+            {service.status}
+          </div>
 
+          <div className="service-version">v{service.version}</div>
+
+          <div className="service-uptime">{service.uptime}</div>
+        </div>
+      ))}
+
+      {services.length === 0 && (
+        <div className="incident-empty">
+          <div className="incident-empty-icon">
+            <CheckCircle2 size={19} />
+          </div>
+
+          <div>
+            <strong>No services registered</strong>
+
+            <span>Waiting for service data from the API.</span>
+          </div>
+        </div>
+      )}
+
+      {services.length > 0 && (
+        <div
+          style={{
+            padding: "12px 22px",
+            color: "#69758a",
+            fontSize: "10px",
+            borderTop: "1px solid rgba(148,163,184,0.07)",
+          }}
+        >
+          {healthyServices} of {services.length} services operational
+        </div>
+      )}
     </div>
   );
 }

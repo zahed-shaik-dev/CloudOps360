@@ -21,10 +21,11 @@ function Dashboard() {
 
       const data = await getServices();
 
-      setServices(data.services || data || []);
-    } catch (err) {
-      console.error("CloudOps360 API error:", err);
-      setError("Unable to connect to CloudOps360 API");
+      setServices(Array.isArray(data) ? data : data.services || []);
+    } catch (error) {
+      console.error(error);
+
+      setError("Unable to connect to the CloudOps360 API.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -41,7 +42,7 @@ function Dashboard() {
   };
 
   const healthyServices = services.filter(
-    (service) => service.status?.toLowerCase() === "healthy"
+    (service) => service.status?.toLowerCase() === "healthy",
   ).length;
 
   const healthPercentage =
@@ -51,24 +52,14 @@ function Dashboard() {
 
   return (
     <div className="dashboard-shell">
-      <Header
-        onRefresh={handleRefresh}
-        refreshing={refreshing}
-      />
+      <Header onRefresh={handleRefresh} refreshing={refreshing} />
 
       <main className="dashboard-content">
-
-        {/* =====================================================
-            HERO
-        ===================================================== */}
+        {/* HERO */}
 
         <section className="dashboard-hero">
-
           <div className="hero-copy">
-
-            <div className="eyebrow">
-              OPERATIONS CENTER
-            </div>
+            <div className="eyebrow">CLOUDOPS360 / OPERATIONS</div>
 
             <h1>
               Infrastructure
@@ -76,58 +67,47 @@ function Dashboard() {
             </h1>
 
             <p>
-              Monitor services, deployments and infrastructure
-              health from one centralized operations dashboard.
+              Monitor services, deployments, infrastructure health and
+              operational signals from one centralized platform.
             </p>
-
           </div>
 
           <div className="operations-badge">
             <span className="operations-badge-dot" />
             Platform Operational
           </div>
-
         </section>
 
-
-        {/* =====================================================
-            LOADING
-        ===================================================== */}
+        {/* LOADING */}
 
         {loading && (
           <div className="loading-state">
             <div className="loading-spinner" />
-            <span>Connecting to infrastructure...</span>
+            Connecting to infrastructure...
           </div>
         )}
 
-
-        {/* =====================================================
-            ERROR
-        ===================================================== */}
+        {/* ERROR */}
 
         {!loading && error && (
           <div className="error-banner">
             <strong>Connection Error</strong>
+
             <span>{error}</span>
-            <button onClick={handleRefresh}>
+
+            <button type="button" onClick={handleRefresh}>
               Retry
             </button>
           </div>
         )}
 
-
-        {/* =====================================================
-            DASHBOARD
-        ===================================================== */}
+        {/* DASHBOARD */}
 
         {!loading && !error && (
           <>
-
-            {/* KPI CARDS */}
+            {/* KPI */}
 
             <section className="stats-grid">
-
               <StatCard
                 type="services"
                 label="SERVICES"
@@ -149,7 +129,7 @@ function Dashboard() {
                 label="INCIDENTS"
                 value="0"
                 description="Active incidents"
-                trend="+0.2%"
+                trend="No active alerts"
               />
 
               <StatCard
@@ -159,27 +139,19 @@ function Dashboard() {
                 description="Current availability"
                 trend="Excellent"
               />
-
             </section>
 
-
-            {/* SERVICE HEALTH */}
+            {/* SERVICES */}
 
             <section className="panel service-panel">
-
               <div className="panel-header">
-
                 <div>
-                  <div className="section-kicker">
-                    SERVICE CATALOG
-                  </div>
+                  <div className="section-kicker">SERVICE CATALOG</div>
 
-                  <div className="panel-title">
-                    Service Health
-                  </div>
+                  <div className="panel-title">Service Health</div>
 
                   <div className="panel-subtitle">
-                    {healthyServices} of {services.length} services operational
+                    Real-time application service status
                   </div>
                 </div>
 
@@ -187,111 +159,72 @@ function Dashboard() {
                   <span />
                   LIVE
                 </div>
-
               </div>
 
               <ServiceTable services={services} />
-
             </section>
 
-
-            {/* METRICS + DEPLOYMENTS */}
+            {/* INFRASTRUCTURE + DEPLOYMENTS */}
 
             <section className="dashboard-grid">
-
               <div className="panel">
-
                 <div className="panel-header">
-
                   <div>
-                    <div className="section-kicker">
-                      INFRASTRUCTURE
-                    </div>
+                    <div className="section-kicker">INFRASTRUCTURE</div>
 
-                    <div className="panel-title">
-                      Resource Utilization
-                    </div>
+                    <div className="panel-title">Resource Utilization</div>
 
                     <div className="panel-subtitle">
-                      CPU & Memory
+                      CPU and memory performance
                     </div>
                   </div>
 
-                  <div className="metric-status">
-                    DEMO DATA
-                  </div>
-
+                  <div className="metric-status">DEMO METRICS</div>
                 </div>
 
                 <MetricChart />
-
               </div>
 
-
               <div className="panel">
-
                 <div className="panel-header">
-
                   <div>
-                    <div className="section-kicker">
-                      DELIVERY
-                    </div>
+                    <div className="section-kicker">DELIVERY</div>
 
-                    <div className="panel-title">
-                      Recent Deployments
-                    </div>
+                    <div className="panel-title">Recent Deployments</div>
 
                     <div className="panel-subtitle">
-                      Latest application releases
+                      Application release activity
                     </div>
                   </div>
 
-                  <div className="deployment-status">
-                    ● ACTIVE
-                  </div>
-
+                  <div className="deployment-status">● ACTIVE</div>
                 </div>
 
                 <DeploymentActivity />
-
               </div>
-
             </section>
 
-
-            {/* INCIDENT MANAGEMENT */}
+            {/* INCIDENTS */}
 
             <section className="panel incident-panel">
-
               <div className="panel-header">
-
                 <div>
-                  <div className="section-kicker">
-                    INCIDENT MANAGEMENT
-                  </div>
+                  <div className="section-kicker">INCIDENT MANAGEMENT</div>
 
-                  <div className="panel-title">
-                    System Status
-                  </div>
+                  <div className="panel-title">System Status</div>
 
                   <div className="panel-subtitle">
-                    System events and incidents
+                    Operational events and incidents
                   </div>
                 </div>
 
-                <div className="incident-count">
-                  0 ACTIVE
-                </div>
-
+                <div className="incident-count">0 ACTIVE</div>
               </div>
 
               <IncidentPanel />
-
             </section>
-
           </>
         )}
-
       </main>
     </div>
   );

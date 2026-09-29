@@ -1,62 +1,48 @@
-import {
-  Bell,
-  RefreshCw,
-  Search,
-  Wifi,
-} from "lucide-react";
+import { Bell, RefreshCw, Search } from "lucide-react";
 
 function Header({ onRefresh, refreshing }) {
   return (
-    <header className="top-header">
-
-      <div className="header-title">
-        <div className="mobile-menu-icon">
-          <span />
-          <span />
-          <span />
-        </div>
-
+    <header className="dashboard-header">
+      <div className="header-left">
         <div>
-          <p className="eyebrow">OPERATIONS CENTER</p>
-          <h2>Infrastructure Overview</h2>
+          <div className="header-title">Operations Center</div>
+
+          <div className="header-subtitle">
+            Cloud infrastructure observability
+          </div>
         </div>
       </div>
 
       <div className="header-actions">
-
         <div className="api-status">
-          <span className="live-pulse" />
-          <Wifi size={14} />
+          <span className="api-status-dot" />
           API Connected
         </div>
 
-        <button
-          className="icon-button"
-          title="Search"
-        >
-          <Search size={17} />
+        <button type="button" className="header-button" aria-label="Search">
+          <Search size={16} />
         </button>
 
         <button
-          className="icon-button notification-button"
-          title="Notifications"
+          type="button"
+          className="header-button"
+          aria-label="Notifications"
         >
-          <Bell size={17} />
-          <span className="notification-dot" />
+          <Bell size={16} />
         </button>
 
         <button
-          className={`refresh-button ${
-            refreshing ? "spinning" : ""
-          }`}
+          type="button"
+          className="header-button"
+          aria-label="Refresh dashboard"
           onClick={onRefresh}
         >
-          <RefreshCw size={15} />
-          Refresh
+          <RefreshCw
+            size={16}
+            className={refreshing ? "loading-spinner" : ""}
+          />
         </button>
-
       </div>
-
     </header>
   );
 }
