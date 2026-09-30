@@ -1,11 +1,11 @@
 import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
 } from "recharts";
 
 const data = [
@@ -20,136 +20,114 @@ const data = [
 
 function MetricChart() {
   return (
-    <div className="metric-card">
+    <div className="metric-chart">
 
-      <div className="section-heading compact">
+      {/* CHART LEGEND */}
 
-        <div>
-          <p className="eyebrow">
-            INFRASTRUCTURE
-          </p>
+      <div className="metric-chart-legend">
 
-          <h3>
-            Resource Utilization
-          </h3>
+        <div className="metric-legend-item">
+          <span className="metric-legend-dot cpu" />
+          CPU
         </div>
 
-        <div className="chart-legend">
-          <span>
-            <i className="legend-cpu" />
-            CPU
-          </span>
-
-          <span>
-            <i className="legend-memory" />
-            Memory
-          </span>
+        <div className="metric-legend-item">
+          <span className="metric-legend-dot memory" />
+          Memory
         </div>
 
       </div>
 
-      <div className="chart-container">
+
+      {/* CHART */}
+
+      <div className="metric-chart-container">
 
         <ResponsiveContainer
           width="100%"
           height="100%"
         >
 
-          <AreaChart data={data}>
-
-            <defs>
-
-              <linearGradient
-                id="cpuGradient"
-                x1="0"
-                y1="0"
-                x2="0"
-                y2="1"
-              >
-                <stop
-                  offset="0%"
-                  stopOpacity={0.3}
-                />
-
-                <stop
-                  offset="100%"
-                  stopOpacity={0}
-                />
-              </linearGradient>
-
-              <linearGradient
-                id="memoryGradient"
-                x1="0"
-                y1="0"
-                x2="0"
-                y2="1"
-              >
-                <stop
-                  offset="0%"
-                  stopOpacity={0.2}
-                />
-
-                <stop
-                  offset="100%"
-                  stopOpacity={0}
-                />
-              </linearGradient>
-
-            </defs>
+          <LineChart
+            data={data}
+            margin={{
+              top: 10,
+              right: 10,
+              left: 0,
+              bottom: 5,
+            }}
+          >
 
             <CartesianGrid
-              stroke="#202832"
+              stroke="rgba(148,163,184,0.12)"
               vertical={false}
             />
 
             <XAxis
               dataKey="time"
-              stroke="#596473"
-              fontSize={10}
-              tickLine={false}
               axisLine={false}
+              tickLine={false}
+              tick={{
+                fill: "#52627a",
+                fontSize: 9,
+              }}
             />
 
             <YAxis
-              stroke="#596473"
-              fontSize={10}
-              tickLine={false}
+              domain={[0, 80]}
               axisLine={false}
-              unit="%"
+              tickLine={false}
+              tick={{
+                fill: "#52627a",
+                fontSize: 9,
+              }}
+              tickFormatter={(value) =>
+                `${value}%`
+              }
             />
 
             <Tooltip
               contentStyle={{
-                background: "#10151c",
-                border: "1px solid #2a3440",
-                color: "#fff",
-                fontSize: "12px",
+                background: "#111722",
+                border:
+                  "1px solid rgba(148,163,184,0.18)",
+                borderRadius: "8px",
+                color: "#f4f7fb",
+                fontSize: "10px",
               }}
+              formatter={(value) =>
+                `${value}%`
+              }
             />
 
-            <Area
+            <Line
               type="monotone"
               dataKey="cpu"
-              stroke="#38bdf8"
-              fill="url(#cpuGradient)"
+              stroke="#25d0e8"
               strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4 }}
             />
 
-            <Area
+            <Line
               type="monotone"
               dataKey="memory"
-              stroke="#a78bfa"
-              fill="url(#memoryGradient)"
+              stroke="#9b7cff"
               strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4 }}
             />
 
-          </AreaChart>
+          </LineChart>
 
         </ResponsiveContainer>
 
       </div>
 
-      <div className="demo-indicator">
+
+      {/* FOOTER */}
+
+      <div className="metric-chart-footer">
         DEMO METRICS · Prometheus integration coming later
       </div>
 

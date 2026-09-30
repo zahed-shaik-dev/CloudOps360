@@ -1,51 +1,60 @@
-import {
-  CheckCircle2,
-  ShieldCheck,
-} from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 
 function IncidentPanel() {
   return (
-    <div className="incident-card">
+    <div className="incident-panel-content">
 
-      <div className="section-heading compact">
+      <div className="incident-panel-top">
 
-        <div>
-          <p className="eyebrow">
-            INCIDENT MANAGEMENT
-          </p>
+        <div className="incident-panel-heading">
 
-          <h3>
-            System Status
-          </h3>
+          <div className="incident-panel-icon">
+            <CheckCircle2 size={20} />
+          </div>
+
+          <div className="incident-panel-title">
+
+            <div className="section-kicker">
+              INCIDENT MANAGEMENT
+            </div>
+
+            <h3>
+              System Status
+            </h3>
+
+          </div>
+
         </div>
 
-        <ShieldCheck size={17} />
+        <div className="incident-count">
+          0 ACTIVE
+        </div>
 
       </div>
 
-      <div className="incident-content">
 
-        <div className="incident-icon">
-          <CheckCircle2 size={30} />
+      <div className="incident-status-card">
+
+        <div className="incident-status-icon">
+          <CheckCircle2 size={22} />
         </div>
 
-        <div>
+        <div className="incident-status-info">
 
           <strong>
             No active incidents
           </strong>
 
-          <p>
-            All monitored services are
-            operating normally.
-          </p>
+          <span>
+            All monitored services are operating normally.
+          </span>
+
+          <small>
+            Last checked · Just now
+          </small>
 
         </div>
 
-      </div>
-
-      <div className="incident-footer">
-        Last checked · Just now
       </div>
 
     </div>

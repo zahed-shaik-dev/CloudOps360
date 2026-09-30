@@ -98,12 +98,8 @@ const deployments = [
 
 function Dashboard({ activeSection }) {
   const [services, setServices] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
-  const [refreshing, setRefreshing] =
-    useState(false);
-
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
   const [selectedService, setSelectedService] =
@@ -123,13 +119,18 @@ function Dashboard({ activeSection }) {
 
       const data = await getServices();
 
-      setServices(
-        Array.isArray(data)
-          ? data
-          : data.services || []
+      const serviceList = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.services)
+          ? data.services
+          : [];
+
+      setServices(serviceList);
+    } catch (err) {
+      console.error(
+        "Failed to load CloudOps360 services:",
+        err
       );
-    } catch (error) {
-      console.error(error);
 
       setError(
         "Unable to connect to the CloudOps360 API."
@@ -141,6 +142,10 @@ function Dashboard({ activeSection }) {
   }, []);
 
 
+  /* =======================================================
+     INITIAL LOAD
+  ======================================================= */
+
   useEffect(() => {
     loadServices();
   }, [loadServices]);
@@ -151,6 +156,8 @@ function Dashboard({ activeSection }) {
   ======================================================= */
 
   const handleRefresh = async () => {
+    if (refreshing) return;
+
     setRefreshing(true);
 
     await loadServices();
@@ -166,10 +173,12 @@ function Dashboard({ activeSection }) {
       service.status?.toLowerCase() === "healthy"
   ).length;
 
-
-  const unhealthyServices =
-    services.length - healthyServices;
-
+  const unhealthyServices = services.filter(
+    (service) =>
+      ["unhealthy", "critical", "down"].includes(
+        service.status?.toLowerCase()
+      )
+  ).length;
 
   const healthPercentage =
     services.length > 0
@@ -189,17 +198,25 @@ function Dashboard({ activeSection }) {
         deployment.status === "success"
     ).length;
 
-
   const failedDeployments =
     deployments.filter(
       (deployment) =>
         deployment.status === "failed"
     ).length;
 
+  const deploymentSuccessRate =
+    deployments.length > 0
+      ? Math.round(
+          (successfulDeployments /
+            deployments.length) *
+            100
+        )
+      : 0;
 
-  /* =======================================================
-     RENDER
-  ======================================================= */
+
+  /* =========================================================
+     MAIN RETURN
+  ========================================================= */
 
   return (
     <div className="dashboard-shell">
@@ -208,7 +225,6 @@ function Dashboard({ activeSection }) {
         onRefresh={handleRefresh}
         refreshing={refreshing}
       />
-
 
       <main className="dashboard-content">
 
@@ -219,6 +235,7 @@ function Dashboard({ activeSection }) {
 
         {activeSection === "overview" && (
           <>
+
             <section className="dashboard-hero">
 
               <div className="hero-copy">
@@ -240,13 +257,9 @@ function Dashboard({ activeSection }) {
 
               </div>
 
-
               <div className="operations-badge">
-
                 <span className="operations-badge-dot" />
-
                 Platform Operational
-
               </div>
 
             </section>
@@ -256,11 +269,8 @@ function Dashboard({ activeSection }) {
 
             {loading && (
               <div className="loading-state">
-
                 <div className="loading-spinner" />
-
                 Connecting to infrastructure...
-
               </div>
             )}
 
@@ -281,8 +291,11 @@ function Dashboard({ activeSection }) {
                 <button
                   type="button"
                   onClick={handleRefresh}
+                  disabled={refreshing}
                 >
-                  Retry
+                  {refreshing
+                    ? "Retrying..."
+                    : "Retry"}
                 </button>
 
               </div>
@@ -294,7 +307,7 @@ function Dashboard({ activeSection }) {
             {!loading && !error && (
               <>
 
-                {/* KPI CARDS */}
+                {/* STATS */}
 
                 <section className="stats-grid">
 
@@ -350,22 +363,18 @@ function Dashboard({ activeSection }) {
                       </div>
 
                       <div className="panel-subtitle">
-                        Real-time application service status
+                        Real-time application service
+                        status
                       </div>
 
                     </div>
 
-
                     <div className="live-indicator">
-
                       <span />
-
                       LIVE
-
                     </div>
 
                   </div>
-
 
                   <ServiceTable
                     services={services}
@@ -374,14 +383,14 @@ function Dashboard({ activeSection }) {
                 </section>
 
 
-                {/* CHART + DEPLOYMENTS */}
+                {/* RESOURCE + DEPLOYMENTS */}
 
                 <section className="dashboard-grid">
 
 
                   {/* RESOURCE UTILIZATION */}
 
-                  <div className="panel">
+                  <div className="panel monitoring-chart-panel">
 
                     <div className="panel-header">
 
@@ -401,13 +410,11 @@ function Dashboard({ activeSection }) {
 
                       </div>
 
-
                       <div className="metric-status">
                         DEMO METRICS
                       </div>
 
                     </div>
-
 
                     <MetricChart />
 
@@ -436,13 +443,11 @@ function Dashboard({ activeSection }) {
 
                       </div>
 
-
                       <div className="deployment-status">
                         ● ACTIVE
                       </div>
 
                     </div>
-
 
                     <DeploymentActivity />
 
@@ -451,35 +456,15 @@ function Dashboard({ activeSection }) {
                 </section>
 
 
-                {/* INCIDENT STATUS */}
+                {/* =================================================
+                    INCIDENT STATUS
+
+                    IMPORTANT:
+                    IncidentPanel already contains its own
+                    incident heading/content.
+                ================================================= */}
 
                 <section className="panel incident-panel">
-
-                  <div className="panel-header">
-
-                    <div>
-
-                      <div className="section-kicker">
-                        INCIDENT MANAGEMENT
-                      </div>
-
-                      <div className="panel-title">
-                        System Status
-                      </div>
-
-                      <div className="panel-subtitle">
-                        Operational events and incidents
-                      </div>
-
-                    </div>
-
-
-                    <div className="incident-count">
-                      0 ACTIVE
-                    </div>
-
-                  </div>
-
 
                   <IncidentPanel />
 
@@ -519,7 +504,6 @@ function Dashboard({ activeSection }) {
                   </p>
 
                 </div>
-
 
                 <div className="operations-badge">
 
@@ -577,7 +561,7 @@ function Dashboard({ activeSection }) {
 
               {/* SERVICE INVENTORY */}
 
-              <section className="panel">
+              <section className="panel service-inventory-panel">
 
                 <div className="panel-header">
 
@@ -598,13 +582,9 @@ function Dashboard({ activeSection }) {
 
                   </div>
 
-
                   <div className="live-indicator">
-
                     <span />
-
                     LIVE
-
                   </div>
 
                 </div>
@@ -626,11 +606,8 @@ function Dashboard({ activeSection }) {
                       <div className="service-name">
 
                         <div className="service-icon">
-
                           <Server size={16} />
-
                         </div>
-
 
                         <div>
 
@@ -668,16 +645,12 @@ function Dashboard({ activeSection }) {
 
 
                       <div className="service-version">
-
                         v{service.version}
-
                       </div>
 
 
                       <div className="service-uptime">
-
                         {service.uptime}
-
                       </div>
 
                     </button>
@@ -689,9 +662,7 @@ function Dashboard({ activeSection }) {
                     <div className="incident-empty">
 
                       <div className="incident-empty-icon">
-
                         <Server size={19} />
-
                       </div>
 
                       <div>
@@ -744,9 +715,6 @@ function Dashboard({ activeSection }) {
 
             <section className="section-page">
 
-
-              {/* PAGE HEADER */}
-
               <div className="page-heading">
 
                 <div>
@@ -765,7 +733,6 @@ function Dashboard({ activeSection }) {
                   </p>
 
                 </div>
-
 
                 <div className="operations-badge">
 
@@ -813,11 +780,7 @@ function Dashboard({ activeSection }) {
                 <StatCard
                   type="uptime"
                   label="SUCCESS RATE"
-                  value={`${Math.round(
-                    (successfulDeployments /
-                      deployments.length) *
-                      100
-                  )}%`}
+                  value={`${deploymentSuccessRate}%`}
                   description="Pipeline success rate"
                   trend="CI/CD"
                 />
@@ -827,7 +790,7 @@ function Dashboard({ activeSection }) {
 
               {/* CI/CD PIPELINE */}
 
-              <section className="panel">
+              <section className="panel deployment-pipeline-panel">
 
                 <div className="panel-header">
 
@@ -842,11 +805,11 @@ function Dashboard({ activeSection }) {
                     </div>
 
                     <div className="panel-subtitle">
-                      CloudOps360 automated delivery workflow
+                      CloudOps360 automated delivery
+                      workflow
                     </div>
 
                   </div>
-
 
                   <div className="deployment-status">
                     ● ACTIVE
@@ -857,30 +820,21 @@ function Dashboard({ activeSection }) {
 
                 <div className="pipeline-flow">
 
-
-                  {/* SOURCE */}
-
                   <div className="pipeline-stage">
 
                     <div className="pipeline-stage-icon">
                       <GitBranch size={17} />
                     </div>
 
-                    <strong>
-                      Git Push
-                    </strong>
+                    <strong>Git Push</strong>
 
-                    <span>
-                      Source
-                    </span>
+                    <span>Source</span>
 
                   </div>
 
 
                   <div className="pipeline-connector" />
 
-
-                  {/* BUILD */}
 
                   <div className="pipeline-stage">
 
@@ -888,21 +842,15 @@ function Dashboard({ activeSection }) {
                       <Terminal size={17} />
                     </div>
 
-                    <strong>
-                      Build
-                    </strong>
+                    <strong>Build</strong>
 
-                    <span>
-                      Compile
-                    </span>
+                    <span>Compile</span>
 
                   </div>
 
 
                   <div className="pipeline-connector" />
 
-
-                  {/* TEST */}
 
                   <div className="pipeline-stage">
 
@@ -910,21 +858,15 @@ function Dashboard({ activeSection }) {
                       <CheckCircle2 size={17} />
                     </div>
 
-                    <strong>
-                      Test
-                    </strong>
+                    <strong>Test</strong>
 
-                    <span>
-                      Automated
-                    </span>
+                    <span>Automated</span>
 
                   </div>
 
 
                   <div className="pipeline-connector" />
 
-
-                  {/* SECURITY */}
 
                   <div className="pipeline-stage">
 
@@ -932,21 +874,15 @@ function Dashboard({ activeSection }) {
                       <ShieldCheck size={17} />
                     </div>
 
-                    <strong>
-                      Security Scan
-                    </strong>
+                    <strong>Security Scan</strong>
 
-                    <span>
-                      DevSecOps
-                    </span>
+                    <span>DevSecOps</span>
 
                   </div>
 
 
                   <div className="pipeline-connector" />
 
-
-                  {/* DOCKER */}
 
                   <div className="pipeline-stage">
 
@@ -954,21 +890,15 @@ function Dashboard({ activeSection }) {
                       <Container size={17} />
                     </div>
 
-                    <strong>
-                      Docker Build
-                    </strong>
+                    <strong>Docker Build</strong>
 
-                    <span>
-                      Image
-                    </span>
+                    <span>Image</span>
 
                   </div>
 
 
                   <div className="pipeline-connector" />
 
-
-                  {/* DEPLOY */}
 
                   <div className="pipeline-stage">
 
@@ -976,13 +906,9 @@ function Dashboard({ activeSection }) {
                       <Rocket size={17} />
                     </div>
 
-                    <strong>
-                      Deploy
-                    </strong>
+                    <strong>Deploy</strong>
 
-                    <span>
-                      Environment
-                    </span>
+                    <span>Environment</span>
 
                   </div>
 
@@ -990,21 +916,15 @@ function Dashboard({ activeSection }) {
                   <div className="pipeline-connector" />
 
 
-                  {/* HEALTH */}
-
                   <div className="pipeline-stage">
 
                     <div className="pipeline-stage-icon">
                       <Server size={17} />
                     </div>
 
-                    <strong>
-                      Health Check
-                    </strong>
+                    <strong>Health Check</strong>
 
-                    <span>
-                      Verify
-                    </span>
+                    <span>Verify</span>
 
                   </div>
 
@@ -1015,7 +935,7 @@ function Dashboard({ activeSection }) {
 
               {/* DEPLOYMENT HISTORY */}
 
-              <section className="panel">
+              <section className="panel deployment-history-panel">
 
                 <div className="panel-header">
 
@@ -1036,13 +956,9 @@ function Dashboard({ activeSection }) {
 
                   </div>
 
-
                   <div className="live-indicator">
-
                     <span />
-
                     LIVE
-
                   </div>
 
                 </div>
@@ -1050,86 +966,69 @@ function Dashboard({ activeSection }) {
 
                 <div className="deployment-history">
 
-                  {deployments.map(
-                    (deployment) => (
+                  {deployments.map((deployment) => (
 
-                      <button
-                        type="button"
-                        key={deployment.id}
-                        className="deployment-history-row"
-                        onClick={() =>
-                          setSelectedDeployment(
-                            deployment
-                          )
-                        }
+                    <button
+                      type="button"
+                      key={deployment.id}
+                      className="deployment-history-row"
+                      onClick={() =>
+                        setSelectedDeployment(
+                          deployment
+                        )
+                      }
+                      aria-label={`View deployment ${deployment.version}`}
+                    >
+
+                      <div className="deployment-history-icon">
+                        <Rocket size={16} />
+                      </div>
+
+
+                      <div className="deployment-history-main">
+
+                        <strong>
+                          {deployment.version}
+                        </strong>
+
+                        <span>
+                          {deployment.branch}
+                          {" · "}
+                          {deployment.time}
+                        </span>
+
+                      </div>
+
+
+                      <div className="deployment-history-commit">
+
+                        <GitCommit size={12} />
+
+                        <span>
+                          {deployment.commit}
+                        </span>
+
+                      </div>
+
+
+                      <div
+                        className={`deployment-history-status ${deployment.status}`}
                       >
 
-                        {/* ICON */}
+                        <span />
 
-                        <div className="deployment-history-icon">
+                        {deployment.status}
 
-                          <Rocket size={16} />
-
-                        </div>
+                      </div>
 
 
-                        {/* RELEASE */}
+                      <div className="deployment-history-duration">
+                        {deployment.duration}
+                      </div>
 
-                        <div className="deployment-history-main">
+                    </button>
 
-                          <strong>
-                            {deployment.version}
-                          </strong>
-
-                          <span>
-                            {deployment.branch}
-                            {" · "}
-                            {deployment.time}
-                          </span>
-
-                        </div>
-
-
-                        {/* COMMIT */}
-
-                        <div className="deployment-history-commit">
-
-                          <GitCommit size={12} />
-
-                          {" "}
-
-                          {deployment.commit}
-
-                        </div>
-
-
-                        {/* STATUS */}
-
-                        <div
-                          className={`deployment-history-status ${
-                            deployment.status
-                          }`}
-                        >
-
-                          <span />
-
-                          {deployment.status}
-
-                        </div>
-
-
-                        {/* DURATION */}
-
-                        <div className="deployment-history-duration">
-
-                          {deployment.duration}
-
-                        </div>
-
-                      </button>
-
-                    )
-                  )}
+                  ))}
 
                 </div>
 
@@ -1157,7 +1056,7 @@ function Dashboard({ activeSection }) {
 
 
         {/* =================================================
-            FUTURE: INCIDENTS
+            INCIDENTS
         ================================================= */}
 
         {activeSection === "incidents" && (
@@ -1188,28 +1087,6 @@ function Dashboard({ activeSection }) {
 
             <section className="panel">
 
-              <div className="panel-header">
-
-                <div>
-
-                  <div className="section-kicker">
-                    INCIDENT CENTER
-                  </div>
-
-                  <div className="panel-title">
-                    Incident Management
-                  </div>
-
-                  <div className="panel-subtitle">
-                    This section will become the full
-                    incident response workspace.
-                  </div>
-
-                </div>
-
-              </div>
-
-
               <IncidentPanel />
 
             </section>
@@ -1220,7 +1097,7 @@ function Dashboard({ activeSection }) {
 
 
         {/* =================================================
-            FUTURE: MONITORING
+            MONITORING
         ================================================= */}
 
         {activeSection === "monitoring" && (
@@ -1258,37 +1135,18 @@ function Dashboard({ activeSection }) {
             </div>
 
 
+            {/* MONITORING GRID */}
+
             <section className="dashboard-grid">
 
-              <div className="panel">
-
-                <div className="panel-header">
-
-                  <div>
-
-                    <div className="section-kicker">
-                      INFRASTRUCTURE
-                    </div>
-
-                    <div className="panel-title">
-                      Resource Metrics
-                    </div>
-
-                    <div className="panel-subtitle">
-                      CPU and memory utilization
-                    </div>
-
-                  </div>
-
-                </div>
-
+              <div className="panel monitoring-chart-panel">
 
                 <MetricChart />
 
               </div>
 
 
-              <div className="panel">
+              <div className="panel monitoring-service-panel">
 
                 <div className="panel-header">
 
@@ -1308,8 +1166,12 @@ function Dashboard({ activeSection }) {
 
                   </div>
 
-                </div>
+                  <div className="live-indicator">
+                    <span />
+                    LIVE
+                  </div>
 
+                </div>
 
                 <ServiceTable
                   services={services}
@@ -1320,7 +1182,9 @@ function Dashboard({ activeSection }) {
             </section>
 
 
-            <section className="panel">
+            {/* OBSERVABILITY WORKSPACE */}
+
+            <section className="panel observability-workspace">
 
               <div className="panel-header">
 
@@ -1335,35 +1199,36 @@ function Dashboard({ activeSection }) {
                   </div>
 
                   <div className="panel-subtitle">
-                    Advanced Power BI-style analytics,
-                    Prometheus metrics, logs, traces and
-                    infrastructure intelligence will be
-                    added here.
+                    Advanced infrastructure and
+                    application observability workspace.
                   </div>
 
+                </div>
+
+                <div className="metric-status">
+                  ROADMAP
                 </div>
 
               </div>
 
 
-              <div className="incident-empty">
+              <div className="observability-placeholder">
 
                 <div className="incident-empty-icon">
-
                   <Server size={19} />
-
                 </div>
 
                 <div>
 
                   <strong>
-                    Observability dashboard foundation ready
+                    Observability foundation ready
                   </strong>
 
                   <span>
                     Prometheus, Grafana, Loki,
-                    OpenTelemetry and alerting will be
-                    connected in the next phase.
+                    OpenTelemetry, alerting and
+                    advanced analytics will be
+                    connected here.
                   </span>
 
                 </div>
