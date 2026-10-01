@@ -1,22 +1,35 @@
-import axios from "axios";
+const API_URL = "/api";
 
-const API_URL = "http://localhost:5000/api";
+async function request(endpoint, options = {}) {
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+    ...options,
+  });
 
-const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status}`);
+  }
 
-export const getServices = async () => {
-  const response = await api.get("/services");
-  return response.data;
+  return response.json();
+}
+
+export async function getHealth() {
+  return request("/health");
+}
+
+export async function getReadiness() {
+  return request("/ready");
+}
+
+export async function getServices() {
+  return request("/services");
+}
+
+export default {
+  getHealth,
+  getReadiness,
+  getServices,
 };
-
-export const getHealth = async () => {
-  const response = await api.get("/health");
-  return response.data;
-};
-
-export default api;
