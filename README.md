@@ -6,7 +6,7 @@ CloudOps360 is an end-to-end DevOps project demonstrating how a modern cloud-nat
 
 ## Architecture
 
-```text
+
 Developer
     │
     ▼

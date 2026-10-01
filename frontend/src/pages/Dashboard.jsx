@@ -26,109 +26,188 @@ import EnvironmentBadge from "../components/EnvironmentBadge";
 import ServiceDetails from "../components/ServiceDetails";
 import DeploymentDetails from "../components/DeploymentDetails";
 
-import { getServices } from "../services/api";
-
-
-/* =========================================================
-   DEMO DEPLOYMENT DATA
-========================================================= */
-
-const deployments = [
-  {
-    id: "1042",
-    version: "v1.4.2",
-    branch: "main",
-    commit: "a81f3c2",
-    duration: "4m 18s",
-    status: "success",
-    environment: "production",
-    author: "CloudOps360",
-    time: "12 minutes ago",
-  },
-  {
-    id: "1041",
-    version: "v1.4.1",
-    branch: "main",
-    commit: "7bc91de",
-    duration: "3m 52s",
-    status: "success",
-    environment: "production",
-    author: "CloudOps360",
-    time: "2 hours ago",
-  },
-  {
-    id: "1040",
-    version: "v1.4.0",
-    branch: "release/v1.4",
-    commit: "4fa72c1",
-    duration: "5m 06s",
-    status: "success",
-    environment: "staging",
-    author: "CloudOps360",
-    time: "5 hours ago",
-  },
-  {
-    id: "1039",
-    version: "v1.3.9",
-    branch: "feature/monitoring",
-    commit: "b31a4ef",
-    duration: "2m 47s",
-    status: "failed",
-    environment: "development",
-    author: "CloudOps360",
-    time: "Yesterday",
-  },
-  {
-    id: "1038",
-    version: "v1.3.8",
-    branch: "main",
-    commit: "91cd82a",
-    duration: "4m 02s",
-    status: "success",
-    environment: "production",
-    author: "CloudOps360",
-    time: "Yesterday",
-  },
-];
+import {
+  getServices,
+  getDeployments,
+  getIncidents,
+  getMetrics,
+} from "../services/api";
 
 
 /* =========================================================
    DASHBOARD
 ========================================================= */
 
-function Dashboard({ activeSection }) {
+function Dashboard({ activeSection = "overview" }) {
+  /* =======================================================
+     STATE
+  ======================================================= */
+
   const [services, setServices] = useState([]);
+  const [deployments, setDeployments] = useState([]);
+  const [incidents, setIncidents] = useState([]);
+  const [metrics, setMetrics] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
-  const [selectedService, setSelectedService] =
-    useState(null);
-
+  const [selectedService, setSelectedService] = useState(null);
   const [selectedDeployment, setSelectedDeployment] =
     useState(null);
 
 
   /* =======================================================
-     LOAD SERVICES
+     LOAD API DATA
   ======================================================= */
 
-  const loadServices = useCallback(async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setError("");
 
-      const data = await getServices();
+      const [
+        servicesResponse,
+        deploymentsResponse,
+        incidentsResponse,
+        metricsResponse,
+      ] = await Promise.all([
+        getServices(),
+        getDeployments(),
+        getIncidents(),
+        getMetrics(),
+      ]);
 
-      const serviceList = Array.isArray(data)
-        ? data
-        : Array.isArray(data?.services)
-          ? data.services
+
+      /* ---------------------------------------------------
+         SERVICES
+      --------------------------------------------------- */
+
+      const serviceList = Array.isArray(servicesResponse)
+        ? servicesResponse
+        : Array.isArray(servicesResponse?.services)
+          ? servicesResponse.services
           : [];
 
+
+      /* ---------------------------------------------------
+         DEPLOYMENTS
+      --------------------------------------------------- */
+
+      const deploymentList = Array.isArray(
+        deploymentsResponse
+      )
+        ? deploymentsResponse
+        : Array.isArray(
+            deploymentsResponse?.deployments
+          )
+          ? deploymentsResponse.deployments
+          : [];
+
+      const normalizedDeployments =
+        deploymentList.map((deployment, index) => ({
+          ...deployment,
+
+          id:
+            deployment.id ??
+            `deployment-${index}`,
+
+          serviceId:
+            deployment.service_id ??
+            deployment.serviceId ??
+            null,
+
+          serviceName:
+            deployment.service_name ??
+            deployment.serviceName ??
+            "Unknown Service",
+
+          environment:
+            deployment.environment ??
+            "production",
+
+          version:
+            deployment.version ??
+            "unknown",
+
+          branch:
+            deployment.branch ??
+            "main",
+
+          commit:
+            deployment.commit ??
+            deployment.commit_hash ??
+            "unknown",
+
+          author:
+            deployment.author ??
+            deployment.deployed_by ??
+            "CloudOps360",
+
+          deployedAt:
+            deployment.deployed_at ??
+            deployment.deployedAt ??
+            null,
+
+          time:
+            deployment.time ??
+            formatRelativeTime(
+              deployment.deployed_at ??
+              deployment.deployedAt
+            ),
+
+          duration:
+            deployment.duration ??
+            "—",
+
+          status:
+            normalizeDeploymentStatus(
+              deployment.status
+            ),
+        }));
+
+
+      /* ---------------------------------------------------
+         INCIDENTS
+      --------------------------------------------------- */
+
+      const incidentList = Array.isArray(
+        incidentsResponse
+      )
+        ? incidentsResponse
+        : Array.isArray(
+            incidentsResponse?.incidents
+          )
+          ? incidentsResponse.incidents
+          : [];
+
+
+      /* ---------------------------------------------------
+         METRICS
+      --------------------------------------------------- */
+
+      const metricList = Array.isArray(
+        metricsResponse
+      )
+        ? metricsResponse
+        : Array.isArray(
+            metricsResponse?.metrics
+          )
+          ? metricsResponse.metrics
+          : [];
+
+
+      /* ---------------------------------------------------
+         UPDATE STATE
+      --------------------------------------------------- */
+
       setServices(serviceList);
+      setDeployments(normalizedDeployments);
+      setIncidents(incidentList);
+      setMetrics(metricList);
+
     } catch (err) {
       console.error(
-        "Failed to load CloudOps360 services:",
+        "Failed to load CloudOps360 dashboard data:",
         err
       );
 
@@ -147,8 +226,8 @@ function Dashboard({ activeSection }) {
   ======================================================= */
 
   useEffect(() => {
-    loadServices();
-  }, [loadServices]);
+    loadDashboardData();
+  }, [loadDashboardData]);
 
 
   /* =======================================================
@@ -156,11 +235,13 @@ function Dashboard({ activeSection }) {
   ======================================================= */
 
   const handleRefresh = async () => {
-    if (refreshing) return;
+    if (refreshing) {
+      return;
+    }
 
     setRefreshing(true);
 
-    await loadServices();
+    await loadDashboardData();
   };
 
 
@@ -170,13 +251,18 @@ function Dashboard({ activeSection }) {
 
   const healthyServices = services.filter(
     (service) =>
-      service.status?.toLowerCase() === "healthy"
+      String(service.status || "").toLowerCase() ===
+      "healthy"
   ).length;
 
   const unhealthyServices = services.filter(
     (service) =>
-      ["unhealthy", "critical", "down"].includes(
-        service.status?.toLowerCase()
+      [
+        "unhealthy",
+        "critical",
+        "down",
+      ].includes(
+        String(service.status || "").toLowerCase()
       )
   ).length;
 
@@ -186,6 +272,24 @@ function Dashboard({ activeSection }) {
           (healthyServices / services.length) * 100
         )
       : 0;
+
+
+  /* =======================================================
+     INCIDENT METRICS
+  ======================================================= */
+
+  const activeIncidents = incidents.filter(
+    (incident) =>
+      ![
+        "resolved",
+        "closed",
+      ].includes(
+        String(incident.status || "").toLowerCase()
+      )
+  );
+
+  const activeIncidentCount =
+    activeIncidents.length;
 
 
   /* =======================================================
@@ -214,9 +318,9 @@ function Dashboard({ activeSection }) {
       : 0;
 
 
-  /* =========================================================
+  /* =======================================================
      MAIN RETURN
-  ========================================================= */
+  ======================================================= */
 
   return (
     <div className="dashboard-shell">
@@ -316,7 +420,7 @@ function Dashboard({ activeSection }) {
                     label="SERVICES"
                     value={services.length}
                     description="Registered services"
-                    trend="+2 this week"
+                    trend="Connected"
                   />
 
                   <StatCard
@@ -324,15 +428,23 @@ function Dashboard({ activeSection }) {
                     label="HEALTHY"
                     value={`${healthPercentage}%`}
                     description="Currently operational"
-                    trend="Stable"
+                    trend={
+                      healthPercentage === 100
+                        ? "All systems healthy"
+                        : "Review services"
+                    }
                   />
 
                   <StatCard
                     type="incidents"
                     label="INCIDENTS"
-                    value="0"
+                    value={activeIncidentCount}
                     description="Active incidents"
-                    trend="No active alerts"
+                    trend={
+                      activeIncidentCount === 0
+                        ? "No active alerts"
+                        : "Investigation required"
+                    }
                   />
 
                   <StatCard
@@ -340,7 +452,7 @@ function Dashboard({ activeSection }) {
                     label="UPTIME"
                     value="99.9%"
                     description="Current availability"
-                    trend="Excellent"
+                    trend="Operational"
                   />
 
                 </section>
@@ -411,12 +523,14 @@ function Dashboard({ activeSection }) {
                       </div>
 
                       <div className="metric-status">
-                        DEMO METRICS
+                        LIVE METRICS
                       </div>
 
                     </div>
 
-                    <MetricChart />
+                    <MetricChart
+                      metrics={metrics}
+                    />
 
                   </div>
 
@@ -449,24 +563,22 @@ function Dashboard({ activeSection }) {
 
                     </div>
 
-                    <DeploymentActivity />
+                    <DeploymentActivity
+                      deployments={deployments}
+                    />
 
                   </div>
 
                 </section>
 
 
-                {/* =================================================
-                    INCIDENT STATUS
-
-                    IMPORTANT:
-                    IncidentPanel already contains its own
-                    incident heading/content.
-                ================================================= */}
+                {/* INCIDENT STATUS */}
 
                 <section className="panel incident-panel">
 
-                  <IncidentPanel />
+                  <IncidentPanel
+                    incidents={incidents}
+                  />
 
                 </section>
 
@@ -592,12 +704,15 @@ function Dashboard({ activeSection }) {
 
                 <div className="service-table">
 
-                  {services.map((service) => (
+                  {services.map((service, index) => (
 
                     <button
                       type="button"
                       className="service-row service-row-button"
-                      key={service.id}
+                      key={
+                        service.id ??
+                        `service-${index}`
+                      }
                       onClick={() =>
                         setSelectedService(service)
                       }
@@ -612,12 +727,16 @@ function Dashboard({ activeSection }) {
                         <div>
 
                           <strong>
-                            {service.name}
+                            {service.name ||
+                              "Unknown Service"}
                           </strong>
 
                           <span>
                             service-
-                            {String(service.id).padStart(
+                            {String(
+                              service.id ??
+                              index + 1
+                            ).padStart(
                               3,
                               "0"
                             )}
@@ -630,7 +749,8 @@ function Dashboard({ activeSection }) {
 
                       <EnvironmentBadge
                         environment={
-                          service.environment
+                          service.environment ||
+                          "production"
                         }
                       />
 
@@ -639,18 +759,19 @@ function Dashboard({ activeSection }) {
 
                         <span className="status-dot" />
 
-                        {service.status}
+                        {service.status ||
+                          "unknown"}
 
                       </div>
 
 
                       <div className="service-version">
-                        v{service.version}
+                        v{service.version || "unknown"}
                       </div>
 
 
                       <div className="service-uptime">
-                        {service.uptime}
+                        {service.uptime || "—"}
                       </div>
 
                     </button>
@@ -753,8 +874,8 @@ function Dashboard({ activeSection }) {
                   type="services"
                   label="TOTAL DEPLOYMENTS"
                   value={deployments.length}
-                  description="Recent pipeline executions"
-                  trend="+12 this week"
+                  description="Pipeline executions"
+                  trend="Database connected"
                 />
 
                 <StatCard
@@ -762,7 +883,7 @@ function Dashboard({ activeSection }) {
                   label="SUCCESSFUL"
                   value={successfulDeployments}
                   description="Completed successfully"
-                  trend="Stable"
+                  trend="CI/CD"
                 />
 
                 <StatCard
@@ -820,113 +941,59 @@ function Dashboard({ activeSection }) {
 
                 <div className="pipeline-flow">
 
-                  <div className="pipeline-stage">
-
-                    <div className="pipeline-stage-icon">
-                      <GitBranch size={17} />
-                    </div>
-
-                    <strong>Git Push</strong>
-
-                    <span>Source</span>
-
-                  </div>
-
+                  <PipelineStage
+                    icon={<GitBranch size={17} />}
+                    title="Git Push"
+                    subtitle="Source"
+                  />
 
                   <div className="pipeline-connector" />
 
-
-                  <div className="pipeline-stage">
-
-                    <div className="pipeline-stage-icon">
-                      <Terminal size={17} />
-                    </div>
-
-                    <strong>Build</strong>
-
-                    <span>Compile</span>
-
-                  </div>
-
+                  <PipelineStage
+                    icon={<Terminal size={17} />}
+                    title="Build"
+                    subtitle="Compile"
+                  />
 
                   <div className="pipeline-connector" />
 
-
-                  <div className="pipeline-stage">
-
-                    <div className="pipeline-stage-icon">
-                      <CheckCircle2 size={17} />
-                    </div>
-
-                    <strong>Test</strong>
-
-                    <span>Automated</span>
-
-                  </div>
-
+                  <PipelineStage
+                    icon={<CheckCircle2 size={17} />}
+                    title="Test"
+                    subtitle="Automated"
+                  />
 
                   <div className="pipeline-connector" />
 
-
-                  <div className="pipeline-stage">
-
-                    <div className="pipeline-stage-icon">
-                      <ShieldCheck size={17} />
-                    </div>
-
-                    <strong>Security Scan</strong>
-
-                    <span>DevSecOps</span>
-
-                  </div>
-
+                  <PipelineStage
+                    icon={<ShieldCheck size={17} />}
+                    title="Security Scan"
+                    subtitle="DevSecOps"
+                  />
 
                   <div className="pipeline-connector" />
 
-
-                  <div className="pipeline-stage">
-
-                    <div className="pipeline-stage-icon">
-                      <Container size={17} />
-                    </div>
-
-                    <strong>Docker Build</strong>
-
-                    <span>Image</span>
-
-                  </div>
-
+                  <PipelineStage
+                    icon={<Container size={17} />}
+                    title="Docker Build"
+                    subtitle="Image"
+                  />
 
                   <div className="pipeline-connector" />
 
-
-                  <div className="pipeline-stage">
-
-                    <div className="pipeline-stage-icon">
-                      <Rocket size={17} />
-                    </div>
-
-                    <strong>Deploy</strong>
-
-                    <span>Environment</span>
-
-                  </div>
-
+                  <PipelineStage
+                    icon={<Rocket size={17} />}
+                    title="Deploy"
+                    subtitle="Environment"
+                  />
 
                   <div className="pipeline-connector" />
 
-
-                  <div className="pipeline-stage">
-
-                    <div className="pipeline-stage-icon">
-                      <Server size={17} />
-                    </div>
-
-                    <strong>Health Check</strong>
-
-                    <span>Verify</span>
-
-                  </div>
+                  <PipelineStage
+                    icon={<Server size={17} />}
+                    title="Health Check"
+                    subtitle="Verify"
+                  />
 
                 </div>
 
@@ -966,69 +1033,102 @@ function Dashboard({ activeSection }) {
 
                 <div className="deployment-history">
 
-                  {deployments.map((deployment) => (
+                  {deployments.map(
+                    (deployment, index) => (
 
-                    <button
-                      type="button"
-                      key={deployment.id}
-                      className="deployment-history-row"
-                      onClick={() =>
-                        setSelectedDeployment(
-                          deployment
-                        )
-                      }
-                      aria-label={`View deployment ${deployment.version}`}
-                    >
+                      <button
+                        type="button"
+                        key={
+                          deployment.id ??
+                          `deployment-${index}`
+                        }
+                        className="deployment-history-row"
+                        onClick={() =>
+                          setSelectedDeployment(
+                            deployment
+                          )
+                        }
+                        aria-label={`View deployment ${
+                          deployment.version
+                        }`}
+                      >
 
-                      <div className="deployment-history-icon">
-                        <Rocket size={16} />
+                        <div className="deployment-history-icon">
+                          <Rocket size={16} />
+                        </div>
+
+
+                        <div className="deployment-history-main">
+
+                          <strong>
+                            {deployment.version}
+                          </strong>
+
+                          <span>
+                            {deployment.branch}
+                            {" · "}
+                            {deployment.time}
+                          </span>
+
+                        </div>
+
+
+                        <div className="deployment-history-commit">
+
+                          <GitCommit size={12} />
+
+                          <span>
+                            {deployment.commit}
+                          </span>
+
+                        </div>
+
+
+                        <div
+                          className={`deployment-history-status ${
+                            deployment.status
+                          }`}
+                        >
+
+                          <span />
+
+                          {deployment.status}
+
+                        </div>
+
+
+                        <div className="deployment-history-duration">
+                          {deployment.duration}
+                        </div>
+
+                      </button>
+
+                    )
+                  )}
+
+
+                  {deployments.length === 0 && (
+                    <div className="incident-empty">
+
+                      <div className="incident-empty-icon">
+                        <Rocket size={19} />
                       </div>
 
-
-                      <div className="deployment-history-main">
+                      <div>
 
                         <strong>
-                          {deployment.version}
+                          No deployments found
                         </strong>
 
                         <span>
-                          {deployment.branch}
-                          {" · "}
-                          {deployment.time}
+                          Deployment history will
+                          appear here when available.
                         </span>
 
                       </div>
 
-
-                      <div className="deployment-history-commit">
-
-                        <GitCommit size={12} />
-
-                        <span>
-                          {deployment.commit}
-                        </span>
-
-                      </div>
-
-
-                      <div
-                        className={`deployment-history-status ${deployment.status}`}
-                      >
-
-                        <span />
-
-                        {deployment.status}
-
-                      </div>
-
-
-                      <div className="deployment-history-duration">
-                        {deployment.duration}
-                      </div>
-
-                    </button>
-
-                  ))}
+                    </div>
+                  )}
 
                 </div>
 
@@ -1082,12 +1182,28 @@ function Dashboard({ activeSection }) {
 
               </div>
 
+              <div className="operations-badge">
+
+                <span className="operations-badge-dot" />
+
+                {activeIncidentCount === 0
+                  ? "No Active Incidents"
+                  : `${activeIncidentCount} Active Incident${
+                      activeIncidentCount > 1
+                        ? "s"
+                        : ""
+                    }`}
+
+              </div>
+
             </div>
 
 
             <section className="panel">
 
-              <IncidentPanel />
+              <IncidentPanel
+                incidents={incidents}
+              />
 
             </section>
 
@@ -1141,7 +1257,33 @@ function Dashboard({ activeSection }) {
 
               <div className="panel monitoring-chart-panel">
 
-                <MetricChart />
+                <div className="panel-header">
+
+                  <div>
+
+                    <div className="section-kicker">
+                      INFRASTRUCTURE METRICS
+                    </div>
+
+                    <div className="panel-title">
+                      Resource Utilization
+                    </div>
+
+                    <div className="panel-subtitle">
+                      Live metrics from CloudOps360
+                    </div>
+
+                  </div>
+
+                  <div className="metric-status">
+                    LIVE
+                  </div>
+
+                </div>
+
+                <MetricChart
+                  metrics={metrics}
+                />
 
               </div>
 
@@ -1247,5 +1389,153 @@ function Dashboard({ activeSection }) {
   );
 }
 
+
+/* =========================================================
+   PIPELINE STAGE
+========================================================= */
+
+function PipelineStage({
+  icon,
+  title,
+  subtitle,
+}) {
+  return (
+    <div className="pipeline-stage">
+
+      <div className="pipeline-stage-icon">
+        {icon}
+      </div>
+
+      <strong>
+        {title}
+      </strong>
+
+      <span>
+        {subtitle}
+      </span>
+
+    </div>
+  );
+}
+
+
+/* =========================================================
+   DEPLOYMENT STATUS NORMALIZER
+========================================================= */
+
+function normalizeDeploymentStatus(status) {
+  const normalized =
+    String(status || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[\s_-]+/g, "");
+
+  if (
+    [
+      "successful",
+      "success",
+      "succeeded",
+      "completed",
+      "complete",
+      "passed",
+    ].includes(normalized)
+  ) {
+    return "success";
+  }
+
+  if (
+    [
+      "failed",
+      "failure",
+      "error",
+      "cancelled",
+      "canceled",
+    ].includes(normalized)
+  ) {
+    return "failed";
+  }
+
+  if (
+    [
+      "running",
+      "inprogress",
+      "pending",
+      "queued",
+      "deploying",
+    ].includes(normalized)
+  ) {
+    return "running";
+  }
+
+  return normalized || "unknown";
+}
+
+
+/* =========================================================
+   RELATIVE TIME FORMATTER
+========================================================= */
+
+function formatRelativeTime(timestamp) {
+  if (!timestamp) {
+    return "Unknown time";
+  }
+
+  const date = new Date(timestamp);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Unknown time";
+  }
+
+  const now = new Date();
+
+  const difference = Math.floor(
+    (now.getTime() - date.getTime()) / 1000
+  );
+
+  if (difference < 0) {
+    return "Just now";
+  }
+
+  if (difference < 60) {
+    return "Just now";
+  }
+
+  const minutes = Math.floor(
+    difference / 60
+  );
+
+  if (minutes < 60) {
+    return `${minutes} minute${
+      minutes === 1 ? "" : "s"
+    } ago`;
+  }
+
+  const hours = Math.floor(
+    minutes / 60
+  );
+
+  if (hours < 24) {
+    return `${hours} hour${
+      hours === 1 ? "" : "s"
+    } ago`;
+  }
+
+  const days = Math.floor(
+    hours / 24
+  );
+
+  if (days < 7) {
+    return `${days} day${
+      days === 1 ? "" : "s"
+    } ago`;
+  }
+
+  return date.toLocaleDateString();
+}
+
+
+/* =========================================================
+   EXPORT
+========================================================= */
 
 export default Dashboard;

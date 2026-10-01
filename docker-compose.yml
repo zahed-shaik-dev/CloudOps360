@@ -6,9 +6,9 @@ services:
     restart: unless-stopped
 
     environment:
-      POSTGRES_DB: cloudops360
-      POSTGRES_USER: cloudops
-      POSTGRES_PASSWORD: cloudops_password
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
     ports:
       - "5432:5432"
@@ -18,7 +18,7 @@ services:
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cloudops -d cloudops360"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -34,14 +34,14 @@ services:
     restart: unless-stopped
 
     environment:
-      NODE_ENV: production
-      PORT: 5000
+      NODE_ENV: ${NODE_ENV}
+      PORT: ${PORT}
 
-      DATABASE_HOST: postgres
-      DATABASE_PORT: 5432
-      DATABASE_NAME: cloudops360
-      DATABASE_USER: cloudops
-      DATABASE_PASSWORD: cloudops_password
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
 
     ports:
       - "148:5000"
