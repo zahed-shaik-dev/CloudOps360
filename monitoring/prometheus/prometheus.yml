@@ -1,0 +1,40 @@
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+
+  # ==========================================================
+  # CLOUDOPS360 APPLICATION
+  # ==========================================================
+
+  - job_name: "cloudops360-api"
+    metrics_path: /api/metrics/prometheus
+
+    static_configs:
+      - targets:
+          - "backend:5000"
+
+
+  # ==========================================================
+  # NODE EXPORTER
+  # ==========================================================
+
+  - job_name: "node-exporter"
+
+    static_configs:
+      - targets:
+          - "node-exporter:9100"
+
+
+  # ==========================================================
+  # CADVISOR
+  # ==========================================================
+
+  - job_name: "cadvisor"
+
+    static_configs:
+      - targets:
+          - "cadvisor:8080"
+

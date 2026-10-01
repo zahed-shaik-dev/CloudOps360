@@ -1,4 +1,9 @@
+
 services:
+
+  # ==========================================================
+  # POSTGRESQL
+  # ==========================================================
 
   postgres:
     image: postgres:16-alpine
@@ -18,11 +23,19 @@ services:
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
 
+
+  # ==========================================================
+  # BACKEND API
+  # ==========================================================
 
   backend:
     build:
@@ -66,6 +79,10 @@ services:
       start_period: 10s
 
 
+  # ==========================================================
+  # FRONTEND
+  # ==========================================================
+
   frontend:
     build:
       context: ./frontend
@@ -83,5 +100,99 @@ services:
         condition: service_healthy
 
 
+  # ==========================================================
+  # PROMETHEUS
+  # ==========================================================
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: cloudops360-prometheus
+    restart: unless-stopped
+
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+
+    ports:
+      - "9090:9090"
+
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+
+    depends_on:
+      backend:
+        condition: service_healthy
+
+
+  # ==========================================================
+  # NODE EXPORTER
+  # ==========================================================
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: cloudops360-node-exporter
+    restart: unless-stopped
+
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+
+    ports:
+      - "9100:9100"
+
+
+  # ==========================================================
+  # CADVISOR
+  # ==========================================================
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cloudops360-cadvisor
+    restart: unless-stopped
+
+    ports:
+      - "8081:8080"
+
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+
+
+  # ==========================================================
+  # GRAFANA
+  # ==========================================================
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: cloudops360-grafana
+    restart: unless-stopped
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+    depends_on:
+      - prometheus
+
+
+# ============================================================
+# PERSISTENT VOLUMES
+# ============================================================
+
 volumes:
   postgres_data:
+  prometheus_data:
+  grafana_data:
+
